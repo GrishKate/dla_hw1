@@ -1,0 +1,4 @@
+_target_: src.model.DeepSpeech2
+n_feats: 128
+n_tokens:
+n_recurrent: 10

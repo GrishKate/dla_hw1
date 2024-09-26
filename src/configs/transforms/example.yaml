@@ -1,0 +1,5 @@
+defaults:
+  - batch_transforms: example
+  - instance_transforms: example
+  - audio_transforms: example
+  - _self_
