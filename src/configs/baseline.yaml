@@ -1,6 +1,6 @@
 defaults:
-  - model: baseline
-  - writer: wandb
+  - model: deepspeech2
+  - writer: cometml
   - metrics: example
   - datasets: example
   - dataloader: example

@@ -56,7 +56,8 @@ class RecurrentBlock(nn.Module):
         spec, spec_lengths = inp
         length = spec.shape[1]
         out = self.act(self.bn(spec.transpose(1, 2))).transpose(1, 2)
-        out = nn.utils.rnn.pack_padded_sequence(out, spec_lengths.cpu(), batch_first=True)
+        out = nn.utils.rnn.pack_padded_sequence(out, spec_lengths.cpu(), batch_first=True,
+                                                enforce_sorted=False)
         out, _ = self.rnn(out)
         out, _ = nn.utils.rnn.pad_packed_sequence(out, total_length=length, batch_first=True)
         return out, spec_lengths
@@ -75,11 +76,11 @@ class DeepSpeech2(nn.Module):
             fc_hidden (int): number of hidden features.
         """
         super().__init__()
-        self.factor = 2
+        self.factor = 8
         modules_list = []
-        modules_list.append(ConvBlock(1, 16, kernel_size=(11, 41), stride=(2, 2), padding=(5, 20)))
-        modules_list.append(ConvBlock(16, 16, kernel_size=(11, 21), stride=(1, 2), padding=(5, 10)))
-        modules_list.append(ConvBlock(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)))
+        modules_list.append(ConvBlock(1, 16, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5)))
+        modules_list.append(ConvBlock(16, 32, kernel_size=(21, 11), stride=(2, 2), padding=(10, 5)))
+        modules_list.append(ConvBlock(32, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
         self.conv = nn.Sequential(*modules_list)
         dim = (n_feats // 4) * 32
         modules_list = []
@@ -99,13 +100,13 @@ class DeepSpeech2(nn.Module):
         Model forward method.
 
         Args:
-            spectrogram (Tensor) (batch, seq, inp_dim): input spectrogram.
+            spectrogram (Tensor) (batch, inp_dim, seq): input spectrogram.
             spectrogram_length (Tensor) (batch): spectrogram original lengths.
         Returns:
             output (dict): output dict containing log_probs and
                 transformed lengths.
         """
-        out_spec, out_len = self.conv((spectrogram.unsqueeze(1), spectrogram_length))
+        out_spec, out_len = self.conv((spectrogram.transpose(1, 2).unsqueeze(1), spectrogram_length))
         b, ch, seq, dim = out_spec.shape
         out_spec = out_spec.permute(0, 2, 1, 3).reshape(b, seq, ch * dim)
         # mask
@@ -113,7 +114,7 @@ class DeepSpeech2(nn.Module):
         out_spec = self.bn(out_spec.transpose(1, 2)).transpose(1, 2)
         output = self.fc(out_spec)
         log_probs = nn.functional.log_softmax(output, dim=-1)
-        log_probs_length = self.transform_input_lengths(spectrogram_length)
+        log_probs_length = out_len  # self.transform_input_lengths(spectrogram_length)
         return {"log_probs": log_probs, "log_probs_length": log_probs_length}
 
     def transform_input_lengths(self, input_lengths):

@@ -11,6 +11,8 @@ wandb
 comet_ml
 hydra-core
 sentencepiece
+wget
+editdistance
 
 black
 isort

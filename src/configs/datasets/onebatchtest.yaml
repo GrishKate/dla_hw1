@@ -1,5 +1,7 @@
 train:
   _target_: src.datasets.LibrispeechDataset
+  use_bpe: True
+  data_dir: None
   part: "dev-clean"
   max_audio_length: 20.0
   max_text_length: 200
@@ -10,6 +12,8 @@ train:
 # do not filter test dataset, you want to evaluate on the whole dataset
 val:
   _target_: src.datasets.LibrispeechDataset
+  use_bpe: True
+  data_dir: None
   part: "dev-clean"
   max_audio_length: 20.0
   max_text_length: 200

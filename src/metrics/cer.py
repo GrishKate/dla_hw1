@@ -38,10 +38,9 @@ class BeamCERMetric(BaseMetric):
         self, log_probs: Tensor, log_probs_length: Tensor, text: List[str], **kwargs
     ):
         cers = []
-        predictions = torch.argmax(log_probs.cpu(), dim=-1).numpy()
-        lengths = log_probs_length.detach().numpy()
-        for log_prob_vec, length, target_text in zip(predictions, lengths, text):
+        lengths = log_probs_length.detach()
+        for log_prob_vec, length, target_text in zip(log_probs, lengths, text):
             target_text = self.text_encoder.normalize_text(target_text)
-            pred_text = self.text_encoder.ctc_beam_decode(log_prob_vec[:length])
+            pred_text = self.text_encoder.ctc_beam_decode(log_prob_vec[:length].exp())
             cers.append(calc_cer(target_text, pred_text))
         return sum(cers) / len(cers)

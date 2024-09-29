@@ -24,10 +24,15 @@ URL_LINKS = {
 class LibrispeechDataset(BaseDataset):
     def __init__(self, part, data_dir=None, *args, **kwargs):
         assert part in URL_LINKS or part == "train_all"
+        use_bpe = kwargs.get('use_bpe', False)
+        if use_bpe:
+            self.translations_file = kwargs.get('data_file', 'translations.txt')  # file for bpe
 
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "librispeech"
             data_dir.mkdir(exist_ok=True, parents=True)
+        elif isinstance(data_dir, str):
+            data_dir = Path(data_dir).absolute()
         self._data_dir = data_dir
         if part == "train_all":
             index = sum(
@@ -65,6 +70,7 @@ class LibrispeechDataset(BaseDataset):
         return index
 
     def _create_index(self, part):
+        trans_file = open(self.translations_file, 'a')
         index = []
         split_dir = self._data_dir / part
         if not split_dir.exists():
@@ -75,7 +81,7 @@ class LibrispeechDataset(BaseDataset):
             if any([f.endswith(".flac") for f in filenames]):
                 flac_dirs.add(dirpath)
         for flac_dir in tqdm(
-            list(flac_dirs), desc=f"Preparing librispeech folders: {part}"
+                list(flac_dirs), desc=f"Preparing librispeech folders: {part}"
         ):
             flac_dir = Path(flac_dir)
             trans_path = list(flac_dir.glob("*.trans.txt"))[0]
@@ -93,4 +99,6 @@ class LibrispeechDataset(BaseDataset):
                             "audio_len": length,
                         }
                     )
+                    trans_file.write(f_text.lower() + '\n')
+        trans_file.close()
         return index

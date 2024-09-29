@@ -7,7 +7,7 @@ import torch
 
 
 # TODO add CTC decode - done
-# TODO add BPE, LM, Beam Search support
+# TODO add BPE - done, LM, Beam Search support - done
 # Note: think about metrics and encoder
 # The design can be remarkably improved
 # to calculate stuff more efficiently and prettier
@@ -26,12 +26,16 @@ class CTCTextEncoder:
 
         if alphabet is None:
             alphabet = list(ascii_lowercase + " ")
-
-        self.alphabet = alphabet
-        self.vocab = [self.EMPTY_TOK] + list(self.alphabet)
-
-        self.ind2char = dict(enumerate(self.vocab))
-        self.char2ind = {v: k for k, v in self.ind2char.items()}
+        if self.use_bpe:
+            data_file = kwargs.get('data_file', None)
+            if data_file is None:
+                raise Exception('Need data file for bpe')
+            self.train_bpe(data_file=data_file)
+        else:
+            self.alphabet = alphabet
+            self.vocab = [self.EMPTY_TOK] + list(self.alphabet)
+            self.ind2char = dict(enumerate(self.vocab))
+            self.char2ind = {v: k for k, v in self.ind2char.items()}
 
     def __len__(self):
         return len(self.vocab)
@@ -43,7 +47,10 @@ class CTCTextEncoder:
     def encode(self, text) -> torch.Tensor:
         text = self.normalize_text(text)
         try:
-            return torch.Tensor([self.char2ind[char] for char in text]).unsqueeze(0)
+            if not self.use_bpe:
+                return torch.Tensor([self.char2ind[char] for char in text]).unsqueeze(0)
+            else:
+                return self.sp_model.encode(self.texts)
         except KeyError:
             unknown_chars = set([char for char in text if char not in self.char2ind])
             raise Exception(
@@ -64,20 +71,55 @@ class CTCTextEncoder:
 
     def ctc_decode(self, inds) -> str:
         decoded = []
-        last_chad_ind = self.EMPTY_TOK
+        last_char_ind = self.EMPTY_TOK
         for ind in inds:
-            if last_chad_ind == ind:
+            if last_char_ind == ind:
                 continue
             if ind != self.EMPTY_TOK:
                 decoded.append(self.ind2char[ind])
-            last_chad_ind = ind
-        if last_chad_ind != self.EMPTY_TOK:
+            last_char_ind = ind
+        if last_char_ind != self.EMPTY_TOK:
             decoded.append(self.ind2char[ind])
         return ''.join(decoded)
 
-    def ctc_beam_decode(self, inds):
-        decoded = []
-        return ''.join(decoded)
+    def get_string(self, string, ind):
+        new_token = self.ind2char[ind]
+        if len(string) == 1 and string == self.ind2char[self.EMPTY_TOK]:
+            new_str = new_token
+        elif ind == self.EMPTY_TOK:
+            new_str = string
+        else:
+            sim = similar(string, new_token)
+            new_str = string + new_token[sim:]
+        return new_str
+
+    def ctc_beam_decode(self, probs, k=3, beam_len=10):
+        # probs (seq, classes)
+        best_string = ''
+        start = 0
+        current = torch.topk(probs[start, :], k)
+        cur_ind = current.indices.numpy()
+        decoded_strings = {self.get_string(best_string, cur_ind[i]): current.values[i]
+                           for i in range(len(cur_ind))}
+        for i in range(1, probs.shape[0]):
+            current = torch.topk(probs[i, :], k)
+            cur_ind = current.indices.numpy()
+            new_decoded_strings = {}
+            for j in range(k):
+                for string in decoded_strings.keys():
+                    new_str = self.get_string(string, cur_ind[j])
+                    new_prob = decoded_strings[string] * current.values[j]
+                    if new_str not in new_decoded_strings.keys():
+                        new_decoded_strings[new_str] = 0
+                    new_decoded_strings[new_str] += new_prob
+            decoded_strings = truncate_path(new_decoded_strings, beam_len)
+        # find string with maximum probability
+        cur_max = -1
+        for string in decoded_strings.keys():
+            if decoded_strings[string] > cur_max:
+                cur_max = decoded_strings[string]
+                best_string = string
+        return best_string
 
     @staticmethod
     def normalize_text(text: str):
@@ -98,3 +140,24 @@ class CTCTextEncoder:
             )
             # load tokenizer from file
         self.sp_model = SentencePieceProcessor(model_file=sp_model_prefix + '.model')
+        self.alphabet = [self.sp_model.id_to_piece(id) for id in range(self.sp_model.get_piece_size())]
+        self.vocab = list(self.alphabet) + [self.EMPTY_TOK]
+        self.ind2char = dict(enumerate(self.vocab))
+        self.char2ind = {v: k for k, v in self.ind2char.items()}
+        self.pad_id, self.unk_id, self.bos_id, self.eos_id = \
+            self.sp_model.pad_id(), self.sp_model.unk_id(), \
+            self.sp_model.bos_id(), self.sp_model.eos_id()
+
+
+def truncate_path(d, beam_len):
+    return dict(sorted(list(d.items()), key=lambda x: -x[1])[:beam_len])
+
+
+def similar(str1, str2):
+    if str1 == '':
+        return 0
+    cnt = 0
+    for i in range(len(str2)):
+        if str2[i] == str1[-i - 1]:
+            cnt += 1
+    return cnt
