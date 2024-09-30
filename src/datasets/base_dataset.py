@@ -31,7 +31,8 @@ class BaseDataset(Dataset):
             max_text_length=None,
             shuffle_index=False,
             instance_transforms=None,
-            audio_augmentations=None
+            audio_augmentations=None,
+            **kwargs
     ):
         """
         Args:

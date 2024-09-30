@@ -60,7 +60,7 @@ def plot_spectrogram(spectrogram, name=None):
     buf.seek(0)
 
     # convert buffer to Tensor
-    image = ToTensor()(PIL.Image.open(buf))
+    image = PIL.Image.open(buf)
 
     plt.close()
 

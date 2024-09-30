@@ -19,18 +19,18 @@ class CReLU(nn.Module):
 class ConvBlock(nn.Module):
     def __init__(self, in_ch, out_ch, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)):
         super().__init__()
-        self.padding = padding[0]
+        self.padding = padding[1]
         self.dilation = 1
-        self.kernel_size = kernel_size[0]
-        self.stride = float(stride[0])
+        self.kernel_size = kernel_size[1]
+        self.stride = float(stride[1])
         self.conv = nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size,
                               stride=stride, padding=padding, bias=False)
         nn.init.kaiming_normal_(self.conv.weight)
         self.bn = nn.BatchNorm2d(out_ch)
-        self.act = nn.ReLU()
+        self.act = nn.Hardtanh()
 
     def forward(self, inp):
-        # input (batch, ch, seq, dim)
+        # input (batch, ch, freq_dim, time_seq)
         spec, seq_len = inp
         seq_len = ((seq_len.float() + 2 * self.padding - self.dilation *
                     (self.kernel_size - 1) - 1) / self.stride + 1).int()
@@ -49,7 +49,7 @@ class RecurrentBlock(nn.Module):
         self.rnn = nn.GRU(inp_dim, outp_dim, num_layers=1, bidirectional=True,
                           bias=True, dropout=dropout, batch_first=True)
         self.bn = nn.BatchNorm1d(inp_dim)
-        self.act = CReLU()
+        self.act = nn.Hardtanh()
 
     def forward(self, inp):
         # spec of shape (batch, seq, dim)
@@ -78,11 +78,12 @@ class DeepSpeech2(nn.Module):
         super().__init__()
         self.factor = 8
         modules_list = []
+        # conv (batch ch freq_dim time)
         modules_list.append(ConvBlock(1, 16, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5)))
-        modules_list.append(ConvBlock(16, 32, kernel_size=(21, 11), stride=(2, 2), padding=(10, 5)))
-        modules_list.append(ConvBlock(32, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
+        modules_list.append(ConvBlock(16, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
+        modules_list.append(ConvBlock(32, 96, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
         self.conv = nn.Sequential(*modules_list)
-        dim = (n_feats // 4) * 32
+        dim = (n_feats // 8) * 96
         modules_list = []
         hidden = dim
         for i in range(n_recurrent):
@@ -106,9 +107,10 @@ class DeepSpeech2(nn.Module):
             output (dict): output dict containing log_probs and
                 transformed lengths.
         """
-        out_spec, out_len = self.conv((spectrogram.transpose(1, 2).unsqueeze(1), spectrogram_length))
-        b, ch, seq, dim = out_spec.shape
-        out_spec = out_spec.permute(0, 2, 1, 3).reshape(b, seq, ch * dim)
+        # spectrogram (batch freq_dim time) -> (batch 1 freq_dim time)
+        out_spec, out_len = self.conv((spectrogram.unsqueeze(1), spectrogram_length))
+        b, ch, freq_dim, time_seq = out_spec.shape
+        out_spec = out_spec.permute(0, 3, 1, 2).reshape(b, time_seq, ch * freq_dim)
         # mask
         out_spec, out_len = self.recurrent((out_spec, out_len))
         out_spec = self.bn(out_spec.transpose(1, 2)).transpose(1, 2)

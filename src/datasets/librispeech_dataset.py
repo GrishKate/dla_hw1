@@ -24,8 +24,8 @@ URL_LINKS = {
 class LibrispeechDataset(BaseDataset):
     def __init__(self, part, data_dir=None, *args, **kwargs):
         assert part in URL_LINKS or part == "train_all"
-        use_bpe = kwargs.get('use_bpe', False)
-        if use_bpe:
+        self.use_bpe = kwargs.get('use_bpe', False)
+        if self.use_bpe:
             self.translations_file = kwargs.get('data_file', 'translations.txt')  # file for bpe
 
         if data_dir is None:
@@ -70,7 +70,8 @@ class LibrispeechDataset(BaseDataset):
         return index
 
     def _create_index(self, part):
-        trans_file = open(self.translations_file, 'a')
+        if self.use_bpe:
+            trans_file = open(self.translations_file, 'a')
         index = []
         split_dir = self._data_dir / part
         if not split_dir.exists():
@@ -99,6 +100,8 @@ class LibrispeechDataset(BaseDataset):
                             "audio_len": length,
                         }
                     )
-                    trans_file.write(f_text.lower() + '\n')
-        trans_file.close()
+                    if self.use_bpe:
+                        trans_file.write(f_text.lower() + '\n')
+        if self.use_bpe:
+            trans_file.close()
         return index
