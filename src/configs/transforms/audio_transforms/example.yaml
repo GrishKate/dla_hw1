@@ -5,4 +5,5 @@ train:
       - _target_: src.transforms.wav_augs.Gain
       - _target_: src.transforms.wav_augs.PitchShift
       - _target_: src.transforms.wav_augs.Noise
+      - _target_: src.transforms.wav_augs.LowPassFilter
 inference:

@@ -3,7 +3,7 @@ from torch import Tensor, nn
 
 
 class Noise(nn.Module):
-    def __init__(self, mean=0, std=0.05):
+    def __init__(self, mean=0, std=0.02):
         super().__init__()
         self.noiser = torch.distributions.Normal(mean, std)
 
