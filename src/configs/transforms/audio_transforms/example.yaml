@@ -4,6 +4,8 @@ train:
     transforms:
       - _target_: src.transforms.wav_augs.Gain
       - _target_: src.transforms.wav_augs.PitchShift
+        sample_rate:  22050
       - _target_: src.transforms.wav_augs.Noise
       - _target_: src.transforms.wav_augs.LowPassFilter
+        sample_rate:  22050
 inference:

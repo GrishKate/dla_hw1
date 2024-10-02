@@ -6,7 +6,7 @@ from torch import Tensor, nn
 class LowPassFilter(nn.Module):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.aug_ = torch_audiomentations.LowPassFilter(*args, **kwargs)
+        self._aug = torch_audiomentations.LowPassFilter(*args, **kwargs)
 
 
     def __call__(self, data: Tensor):

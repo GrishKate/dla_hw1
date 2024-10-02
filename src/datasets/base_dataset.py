@@ -135,7 +135,7 @@ class BaseDataset(Dataset):
     def preprocess_audio(self, audio):
         if self.apply_audio_aug is None:
             return audio
-        return self.apply_adio_aug(audio)
+        return self.apply_audio_aug['audio'](audio)
 
     def preprocess_data(self, instance_data):
         """
