@@ -1,8 +1,9 @@
 from torch import Tensor, nn
 import torchaudio
 
-class SpecAug:
+class SpecAug(nn.Module):
     def __init__(self, *args, **kwargs):
+        super().__init__()
         freq_mask = kwargs.get('freq_mask', 20)
         time_mask = kwargs.get('time_mask', 50)
         self.specaug = nn.Sequential(
