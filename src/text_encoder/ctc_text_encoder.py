@@ -98,12 +98,12 @@ class CTCTextEncoder:
         best_string = ''
         start = 0
         current = torch.topk(probs[start, :], k)
-        cur_ind = current.indices.numpy()
+        cur_ind = current.indices.cpu().numpy()
         decoded_strings = {self.get_string(best_string, cur_ind[i]): current.values[i]
                            for i in range(len(cur_ind))}
         for i in range(1, probs.shape[0]):
             current = torch.topk(probs[i, :], k)
-            cur_ind = current.indices.numpy()
+            cur_ind = current.indices.cpu().numpy()
             new_decoded_strings = {}
             for j in range(k):
                 for string in decoded_strings.keys():
