@@ -4,13 +4,13 @@ import editdistance
 
 
 def calc_wer(target_text, predicted_text) -> float:
-    if len(target_text):
+    if len(target_text) == 0:
         return 1
     target_split = target_text.split()
-    return editdistance.eval((target_split, predicted_text.split())) / len(target_split)
+    return editdistance.eval(target_split, predicted_text.split()) / len(target_split)
 
 
 def calc_cer(target_text, predicted_text) -> float:
-    if len(target_text):
+    if len(target_text) == 0:
         return 1
-    return editdistance.eval((target_text, predicted_text)) / len(target_text)
+    return editdistance.eval(target_text, predicted_text) / len(target_text)

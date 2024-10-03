@@ -27,7 +27,7 @@ class ConvBlock(nn.Module):
                               stride=stride, padding=padding, bias=False)
         nn.init.kaiming_normal_(self.conv.weight)
         self.bn = nn.BatchNorm2d(out_ch)
-        self.act = nn.Hardtanh()
+        self.act = CReLU()
 
     def forward(self, inp):
         # input (batch, ch, freq_dim, time_seq)
@@ -49,7 +49,7 @@ class RecurrentBlock(nn.Module):
         self.rnn = nn.GRU(inp_dim, outp_dim, num_layers=1, bidirectional=True,
                           bias=True, dropout=dropout, batch_first=True)
         self.bn = nn.BatchNorm1d(inp_dim)
-        self.act = nn.Hardtanh()
+        self.act = CReLU()
 
     def forward(self, inp):
         # spec of shape (batch, seq, dim)
@@ -81,9 +81,9 @@ class DeepSpeech2(nn.Module):
         # conv (batch ch freq_dim time)
         modules_list.append(ConvBlock(1, 16, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5)))
         modules_list.append(ConvBlock(16, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
-        modules_list.append(ConvBlock(32, 96, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
+        modules_list.append(ConvBlock(32, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
         self.conv = nn.Sequential(*modules_list)
-        dim = (n_feats // 8) * 96
+        dim = (n_feats // 8) * 32
         modules_list = []
         hidden = dim
         for i in range(n_recurrent):
