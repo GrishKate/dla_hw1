@@ -1,4 +1,5 @@
 import io
+import torch
 
 import matplotlib.pyplot as plt
 import PIL
@@ -53,7 +54,7 @@ def plot_spectrogram(spectrogram, name=None):
         image (Image): image of the spectrogram
     """
     plt.figure(figsize=(20, 5))
-    plt.pcolormesh(spectrogram)
+    plt.pcolormesh(torch.log(spectrogram))
     plt.title(name)
     buf = io.BytesIO()
     plt.savefig(buf, format="png")

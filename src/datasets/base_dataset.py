@@ -130,7 +130,7 @@ class BaseDataset(Dataset):
         Returns:
             spectrogram (Tensor): spectrogram for the audio.
         """
-        return torch.log(self.instance_transforms["get_spectrogram"](audio))
+        return self.instance_transforms["get_spectrogram"](audio)
 
     def preprocess_audio(self, audio):
         if self.apply_audio_aug is None:
