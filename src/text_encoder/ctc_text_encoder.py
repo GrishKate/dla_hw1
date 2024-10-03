@@ -84,9 +84,9 @@ class CTCTextEncoder:
 
     def get_string(self, string, ind):
         new_token = self.ind2char[ind]
-        if len(string) == 1 and string == self.ind2char[self.EMPTY_TOK]:
+        if len(string) == 1 and string == self.EMPTY_TOK:
             new_str = new_token
-        elif ind == self.EMPTY_TOK:
+        elif new_token == self.EMPTY_TOK:
             new_str = string
         else:
             sim = similar(string, new_token)

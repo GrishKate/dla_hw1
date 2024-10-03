@@ -25,6 +25,7 @@ class Inferencer(BaseTrainer):
             metrics=None,
             batch_transforms=None,
             skip_model_load=False,
+            save_txt=False
     ):
         """
         Initialize the Inferencer.
@@ -52,6 +53,7 @@ class Inferencer(BaseTrainer):
         assert (
                 skip_model_load or config.inferencer.get("from_pretrained") is not None
         ), "Provide checkpoint or set skip_model_load=True"
+        self.save_txt = save_txt
 
         self.config = config
         self.cfg_trainer = self.config.inferencer
@@ -146,33 +148,37 @@ class Inferencer(BaseTrainer):
             label = batch["labels"][i].clone()
             length = batch["lengths"][i]
             pred_label = logits.argmax(dim=-1)
-
-            inds = pred_label[: int(length)]
-            argmax_text_raw = self.text_encoder.decode(inds)
-            argmax_text = self.text_encoder.ctc_decode(inds)
-            beam_text = self.text_encoder.ctc_beam_decode(logits[:length].exp())
-
             output_id = current_id + i
 
             output = {
                 "pred_label": pred_label,
                 "label": label,
             }
-            output_text = {
-                "text_raw": argmax_text_raw,
-                "text": argmax_text,
-                "beam_text": beam_text
-            }
 
             if self.save_path is not None:
                 # you can use safetensors or other lib here
                 torch.save(output, self.save_path / part / f"output_{output_id}.pth")
-                with open(self.save_path / part / f"output_text_{output_id}.txt", 'w') as f:
-                    f.write(output_text["text"])
-                with open(self.save_path / part / f"output_beam_{output_id}.txt", 'w') as f:
-                    f.write(output_text["beam_text"])
+
+            if self.save_txt:
+                self.save_texts(logits, pred_label, length, part, output_id)
 
         return batch
+
+    def save_texts(self, logits, pred_label, length, part, output_id):
+        inds = pred_label[: int(length)]
+        argmax_text_raw = self.text_encoder.decode(inds)
+        argmax_text = self.text_encoder.ctc_decode(inds)
+        beam_text = self.text_encoder.ctc_beam_decode(logits[:length].exp())
+        output_text = {
+            "text_raw": argmax_text_raw,
+            "text": argmax_text,
+            "beam_text": beam_text
+        }
+        if self.save_path is not None:
+            with open(self.save_path / part / f"output_text_{output_id}.txt", 'w') as f:
+                f.write(output_text["text"])
+            with open(self.save_path / part / f"output_beam_{output_id}.txt", 'w') as f:
+                f.write(output_text["beam_text"])
 
     def _inference_part(self, part, dataloader):
         """
