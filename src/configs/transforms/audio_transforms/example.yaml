@@ -3,9 +3,20 @@ train:
     _target_: torchvision.transforms.v2.Compose
     transforms:
       - _target_: src.transforms.wav_augs.Gain
+        min_gain_in_db: -1.0
+        max_gain_in_db: 1.0
+        p: 0.1
       - _target_: src.transforms.wav_augs.PitchShift
         sample_rate:  16000
+        p: 0.1
       - _target_: src.transforms.wav_augs.Noise
+        p: 0.1
       - _target_: src.transforms.wav_augs.LowPassFilter
         sample_rate:  16000
+        p: 0.1
+      - _target_: src.transforms.wav_augs.Speed
+        sample_rate: 16000
+        speed_min: 0.8
+        speed_max: 1.2
+        p: 0.1
 inference:

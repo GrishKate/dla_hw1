@@ -128,7 +128,7 @@ class CTCTextEncoder:
         return text
 
     def train_bpe(self, data_file: str, sp_model_prefix: str = None,
-                  vocab_size: int = 200, normalization_rule_name: str = 'nmt_nfkc_cf',
+                  vocab_size: int = 100, normalization_rule_name: str = 'nmt_nfkc_cf',
                   model_type: str = 'bpe'):
         if not os.path.isfile(sp_model_prefix + '.model'):
             # train tokenizer if not trained yet

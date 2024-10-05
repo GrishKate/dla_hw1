@@ -53,16 +53,14 @@ class RecurrentBlock(nn.Module):
 
     def forward(self, inp):
         # spec of shape (batch, seq, dim)
-        spec, spec_lengths, h = inp
+        spec, spec_lengths = inp
         length = spec.shape[1]
         out = self.act(self.bn(spec.transpose(1, 2))).transpose(1, 2)
         out = nn.utils.rnn.pack_padded_sequence(out, spec_lengths.cpu(), batch_first=True,
                                                 enforce_sorted=False)
-        out, h = self.rnn(out, h)
+        out, _ = self.rnn(out)
         out, _ = nn.utils.rnn.pad_packed_sequence(out, total_length=length, batch_first=True)
-        batch, seq, dim = out.shape
-        out = out.reshape(batch, seq, 2, -1).sum(dim=2).reshape(batch, seq, -1)
-        return out, spec_lengths, h
+        return out, spec_lengths
 
 
 class DeepSpeech2(nn.Module):
@@ -78,21 +76,21 @@ class DeepSpeech2(nn.Module):
             fc_hidden (int): number of hidden features.
         """
         super().__init__()
-        self.factor = 4
+        self.factor = 8
         modules_list = []
         # conv (batch ch freq_dim time)
-        modules_list.append(ConvBlock(1, 32, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5)))
+        modules_list.append(ConvBlock(1, 16, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5)))
+        modules_list.append(ConvBlock(16, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
         modules_list.append(ConvBlock(32, 32, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5)))
         self.conv = nn.Sequential(*modules_list)
-        dim = (n_feats // 4) * 32
+        dim = (n_feats // 8) * 32
         modules_list = []
         hidden = dim
         for i in range(n_recurrent):
             modules_list.append(RecurrentBlock(hidden, dim))
-            # hidden = 2 * dim
+            hidden = 2 * dim
         dim = hidden
         self.recurrent = nn.Sequential(*modules_list)
-        self.act = CReLU()
         self.bn = nn.BatchNorm1d(dim)
         self.fc = nn.Linear(dim, n_tokens)
         nn.init.kaiming_normal_(self.fc.weight)
@@ -114,8 +112,8 @@ class DeepSpeech2(nn.Module):
         b, ch, freq_dim, time_seq = out_spec.shape
         out_spec = out_spec.permute(0, 3, 1, 2).reshape(b, time_seq, ch * freq_dim)
         # mask
-        out_spec, out_len, _ = self.recurrent((out_spec, out_len, None))
-        out_spec = self.bn(self.act(out_spec).transpose(1, 2)).transpose(1, 2)
+        out_spec, out_len = self.recurrent((out_spec, out_len))
+        out_spec = self.bn(out_spec.transpose(1, 2)).transpose(1, 2)
         output = self.fc(out_spec)
         log_probs = nn.functional.log_softmax(output, dim=-1)
         log_probs_length = out_len  # self.transform_input_lengths(spectrogram_length)
