@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import torch
 
 from src.logger.utils import plot_spectrogram
 from src.metrics.tracker import MetricTracker
@@ -79,10 +80,20 @@ class Trainer(BaseTrainer):
         # logging scheme might be different for different partitions
         if mode == "train":  # the method is called only every self.log_step steps
             self.log_spectrogram(**batch)
+            self.log_text(**batch)
         else:
             # Log Stuff
             self.log_spectrogram(**batch)
             self.log_predictions(**batch)
+
+    def log_text(self, **batch):
+        # simple and fast log of prediction
+        targ = batch['text'][0]
+        log_prob, length = batch['log_probs'][0], batch['log_probs_length'][0].detach().numpy()
+        log_prob_vec = torch.argmax(log_prob.cpu(), dim=-1).numpy()
+        pred = self.text_encoder.ctc_decode(log_prob_vec[:length])
+        self.writer.add_text("targ_text", targ)
+        self.writer.add_text("pred_text", pred)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()

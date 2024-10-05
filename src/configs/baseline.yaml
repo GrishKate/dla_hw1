@@ -4,27 +4,31 @@ defaults:
   - metrics: example
   - datasets: example
   - dataloader: example
-  - transforms: example #_only_instance
+  - transforms: example_only_instance
   - _self_
 optimizer:
   _target_: torch.optim.Adam
-  lr: 3e-4
-  weight_decay: 1e-5
-lr_scheduler:
+  lr: 1e-2
+  weight_decay: 1e-05
+lr_scheduler1:
   _target_: torch.optim.lr_scheduler.OneCycleLR
   max_lr: 1e-2
-  pct_start: 0.1
-  steps_per_epoch: ${trainer.epoch_len}
-  epochs: ${trainer.n_epochs}
+  pct_start: 0.004
+  steps_per_epoch: 100
+  epochs: 250
   anneal_strategy: cos
+lr_scheduler2:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: 5000
+  gamma: 0.9
 loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
 trainer:
-  log_step: 50
+  log_step: 100
   n_epochs: 50
-  epoch_len: 200
+  epoch_len: 500
   device_tensors: ["spectrogram", "text_encoded"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
