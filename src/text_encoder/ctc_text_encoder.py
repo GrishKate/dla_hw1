@@ -27,10 +27,11 @@ class CTCTextEncoder:
         if alphabet is None:
             alphabet = list(ascii_lowercase + " ")
         if self.use_bpe:
+            vocab_size = kwargs.get('vocab_size', 250)
             data_file = kwargs.get('data_file', None)
             if data_file is None:
                 raise Exception('Need data file for bpe')
-            self.train_bpe(data_file=data_file)
+            self.train_bpe(data_file=data_file, vocab_size=vocab_size)
         else:
             self.alphabet = alphabet
             self.vocab = [self.EMPTY_TOK] + list(self.alphabet)
@@ -128,7 +129,7 @@ class CTCTextEncoder:
         return text
 
     def train_bpe(self, data_file: str, sp_model_prefix: str = None,
-                  vocab_size: int = 100, normalization_rule_name: str = 'nmt_nfkc_cf',
+                  vocab_size: int = 250, normalization_rule_name: str = 'nmt_nfkc_cf',
                   model_type: str = 'bpe'):
         if not os.path.isfile(sp_model_prefix + '.model'):
             # train tokenizer if not trained yet
