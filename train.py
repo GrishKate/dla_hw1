@@ -58,7 +58,9 @@ def main(config):
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = instantiate(config.optimizer, params=trainable_params)
-    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
+    lr_scheduler1 = instantiate(config.lr_scheduler1, optimizer=optimizer)
+    lr_scheduler2 = instantiate(config.lr_scheduler2, optimizer=optimizer)
+    lr_scheduler = torch.optim.lr_scheduler.ChainedScheduler([lr_scheduler1, lr_scheduler2])
 
     # epoch_len = number of iterations for iteration-based training
     # epoch_len = None or len(dataloader) for epoch-based training
