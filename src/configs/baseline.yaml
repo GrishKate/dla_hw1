@@ -26,6 +26,8 @@ loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
+  use_bpe: True
+  vocab_size: 100
 trainer:
   log_step: 100
   n_epochs: 50

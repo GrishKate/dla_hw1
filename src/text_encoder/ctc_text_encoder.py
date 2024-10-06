@@ -27,8 +27,8 @@ class CTCTextEncoder:
         if alphabet is None:
             alphabet = list(ascii_lowercase + " ")
         if self.use_bpe:
-            vocab_size = kwargs.get('vocab_size', 250)
-            data_file = kwargs.get('data_file', None)
+            vocab_size = kwargs.get('vocab_size', 100)
+            data_file = kwargs.get('data_file', 'translations.txt')
             if data_file is None:
                 raise Exception('Need data file for bpe')
             self.train_bpe(data_file=data_file, vocab_size=vocab_size)
@@ -51,7 +51,7 @@ class CTCTextEncoder:
             if not self.use_bpe:
                 return torch.Tensor([self.char2ind[char] for char in text]).unsqueeze(0)
             else:
-                return self.sp_model.encode(self.texts)
+                return torch.Tensor(self.sp_model.encode(text)).unsqueeze(0)
         except KeyError:
             unknown_chars = set([char for char in text if char not in self.char2ind])
             raise Exception(
@@ -128,7 +128,7 @@ class CTCTextEncoder:
         text = re.sub(r"[^a-z ]", "", text)
         return text
 
-    def train_bpe(self, data_file: str, sp_model_prefix: str = None,
+    def train_bpe(self, data_file: str, sp_model_prefix: str = 'bpe_file',
                   vocab_size: int = 250, normalization_rule_name: str = 'nmt_nfkc_cf',
                   model_type: str = 'bpe'):
         if not os.path.isfile(sp_model_prefix + '.model'):
