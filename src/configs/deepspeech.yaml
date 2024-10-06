@@ -1,5 +1,5 @@
 defaults:
-  - model: conformer
+  - model: deepspeech2
   - writer: cometml
   - metrics: example
   - datasets: example
@@ -7,21 +7,20 @@ defaults:
   - transforms: example_only_instance
   - _self_
 optimizer:
-  _target_: torch.optim.AdamW
-  lr: 5e-4
-  betas: (0.9, 0.98)
+  _target_: torch.optim.Adam
+  lr: 1e-2
   weight_decay: 1e-05
 lr_scheduler1:
   _target_: torch.optim.lr_scheduler.OneCycleLR
-  max_lr: 5e-4
-  pct_start: 0.005
-  steps_per_epoch: 500
-  epochs:  50
+  max_lr: 1e-2
+  pct_start: 0.004
+  steps_per_epoch: 100
+  epochs: 250
   anneal_strategy: cos
 lr_scheduler2:
   _target_: torch.optim.lr_scheduler.StepLR
   step_size: 5000
-  gamma: 1.0
+  gamma: 0.9
 loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
