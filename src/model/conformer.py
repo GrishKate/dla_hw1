@@ -106,13 +106,14 @@ class Block(nn.Module):
         self.ffn2 = FFN(dim, dim * factor, drop_p)
         self.ln = nn.LayerNorm(dim)
 
-    def forward(self, spectrogram, mask=None):
+    def forward(self, inp):
+        spectrogram, mask = inp
         out = spectrogram + 0.5 * self.ffn1(spectrogram)
         out = out + self.mhsa(out, mask=mask)
         out = out + self.conv(out)
         out = out + 0.5 * self.ffn2(out)
         out = self.ln(out)
-        return out
+        return out, mask
 
 
 class Subsampling(nn.Module):
@@ -148,7 +149,8 @@ class Conformer(nn.Module):
         n_feats = ((n_feats - 1) // 2 - 1) // 2
         self.fc1 = nn.Linear(dim * n_feats, dim)
         self.dropout = nn.Dropout(p=drop_p)
-        self.blocks = [Block(dim) for _ in range(n_blocks)]
+        blocks = [Block(dim) for _ in range(n_blocks)]
+        self.net = nn.Sequential(*blocks)
         self.fc_last = nn.Linear(dim, n_tokens)
 
     def forward(self, spectrogram, spectrogram_length, **batch):
@@ -165,9 +167,7 @@ class Conformer(nn.Module):
         # (batch freq_dim time)
         output = self.conv(spectrogram)
         output = self.dropout(self.fc1(output))
-        mask = None
-        for block in self.blocks:
-            output = block(output, mask=mask)
+        output, _ = self.net((output, None))
         output = self.fc_last(output)
         log_probs = nn.functional.log_softmax(output, dim=-1)
         log_probs_length = self.transform_input_lengths(spectrogram_length)
