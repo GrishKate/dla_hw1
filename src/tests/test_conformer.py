@@ -14,7 +14,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=1e-04)
 
 for i in range(5):
     spectrogram = torch.randn(batch_size, n_feats, seq_len)
-    lengths = torch.tensor([191, 59])
+    lengths = torch.tensor([199, 59])
     target = torch.randint(low=0, high=n_tokens, size=(batch_size, n_tokens)).to(device)
     target_len = torch.tensor([4, 3])
     res_dict = model(spectrogram, lengths)

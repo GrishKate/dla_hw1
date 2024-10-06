@@ -19,7 +19,6 @@ class ConvBlock(nn.Module):
 
     def forward(self, spectrogram):
         # batch, seq, dim
-        #print(spectrogram.shape)
         out = self.ln(spectrogram).transpose(1, 2)
         return self.net(out).transpose(1, 2)
 
@@ -62,16 +61,17 @@ class RelativeAttn(nn.Module):
         self.dropout = nn.Dropout(p=drop_p)
 
         length = 10000
-        self.enc = torch.empty(length, dim)
+        enc = torch.empty(length, dim)
         pos = torch.arange(0, length).float()[:, None] / (10000 ** (torch.arange(0.0, dim, 2.0) / dim))
-        self.enc[:, 0::2] = torch.sin(pos)
-        self.enc[:, 1::2] = torch.cos(pos)
+        enc[:, 0::2] = torch.sin(pos)
+        enc[:, 1::2] = torch.cos(pos)
+        self.register_buffer('enc', enc)
 
     def forward(self, spectrogram, mask=None):
         # batch, seq, dim
         b, seq, dim = spectrogram.shape
         out = self.ln(spectrogram)
-        pos_emb = self.enc[:seq, :] # seq, dim
+        pos_emb = self.enc[:seq, :]  # seq, dim
         pos_emb = self.pos_pr(pos_emb).view(1, -1, self.n_heads, self.dim_head).permute(0, 2, 3, 1)
 
         q = self.q_pr(out).view(b, seq, self.n_heads, self.dim_head)
@@ -120,7 +120,7 @@ class Subsampling(nn.Module):
     def __init__(self, dim, factor=4, drop_p=0.1):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Conv2d(1, dim, kernel_size=3, stride=2),
+            nn.Conv2d(1, dim, kernel_size=3, stride=(2, 1)),
             nn.ReLU(),
             nn.Conv2d(dim, dim, kernel_size=3, stride=2),
             nn.ReLU()
@@ -137,12 +137,6 @@ class Subsampling(nn.Module):
 class Conformer(nn.Module):
 
     def __init__(self, n_feats, n_tokens, n_blocks, dim=144, drop_p=0.1):
-        """
-        Args:
-            n_feats (int): number of input features.
-            n_tokens (int): number of tokens in the vocabulary.
-            fc_hidden (int): number of hidden features.
-        """
         super().__init__()
 
         self.conv = Subsampling(dim)
@@ -183,12 +177,9 @@ class Conformer(nn.Module):
         Returns:
             output_lengths (Tensor): new temporal lengths
         """
-        return ((input_lengths -1) // 2 - 1) // 2
+        return ((input_lengths -1) / 2-1).int()
 
     def __str__(self):
-        """
-        Model prints with the number of parameters.
-        """
         all_parameters = sum([p.numel() for p in self.parameters()])
         trainable_parameters = sum(
             [p.numel() for p in self.parameters() if p.requires_grad]
