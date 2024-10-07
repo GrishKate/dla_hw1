@@ -1,4 +1,4 @@
 _target_: src.model.Conformer
 n_feats: 128
-n_blocks: 16
+n_blocks: 5
 dim: 144

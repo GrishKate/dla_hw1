@@ -1,5 +1,7 @@
 defaults:
-  - batch_transforms: example
   - instance_transforms: example
   - audio_transforms: example
   - _self_
+batch_transforms:
+  train: null
+  inference: null

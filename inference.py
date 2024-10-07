@@ -62,6 +62,7 @@ def main(config):
         save_path=save_path,
         metrics=metrics,
         skip_model_load=False,
+        save_txt=True,
     )
 
     logs = inferencer.run_inference()

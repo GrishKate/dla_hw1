@@ -11,6 +11,8 @@ train:
         p: 0.1
       - _target_: src.transforms.wav_augs.Noise
         p: 0.1
+        mean: 0.0
+        std: 0.03
       - _target_: src.transforms.wav_augs.LowPassFilter
         sample_rate:  16000
         p: 0.1

@@ -2,7 +2,7 @@ from torch import Tensor, nn
 
 
 class Normalize1d(nn.Module):
-    def __init__(self, mean, std):
+    def __init__(self, mean=0.0, std=1.0):
         super().__init__()
         self.mean = mean
         self.std = std
