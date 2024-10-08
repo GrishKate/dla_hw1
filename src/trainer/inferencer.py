@@ -138,47 +138,39 @@ class Inferencer(BaseTrainer):
         # Some saving logic. This is an example
         # Use if you need to save predictions on disk
 
-        batch_size = batch["logits"].shape[0]
+        batch_size = batch["log_probs"].shape[0]
         current_id = batch_idx * batch_size
 
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            length = batch["lengths"][i]
+            logits = batch["log_probs"][i].clone()
+            length = batch["log_probs_length"][i].clone()
+            target_text = None
+            if 'text' in batch.keys():
+                target_text = batch["text"][i]
             pred_label = logits.argmax(dim=-1)
             output_id = current_id + i
 
-            output = {
-                "pred_label": pred_label,
-                "label": label,
+            inds = pred_label[: int(length)].cpu().numpy()
+            argmax_text_raw = self.text_encoder.decode(inds)
+            argmax_text = self.text_encoder.ctc_decode(inds)
+            beam_text = self.text_encoder.ctc_beam_decode(logits[:length].exp(), k=10, beam_len=50)
+            output_text = {
+                "text_raw": argmax_text_raw,
+                "argmax_text": argmax_text,
+                "beam_text": beam_text,
+                "target_text": target_text,
             }
-
             if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
-
-            if self.save_txt:
-                self.save_texts(logits, pred_label, length, part, output_id)
-
+                with open(self.save_path / part / f"output_argmax_{output_id}.txt", 'w') as f:
+                    f.write(output_text["argmax_text"])
+                with open(self.save_path / part / f"output_beam_{output_id}.txt", 'w') as f:
+                    f.write(output_text["beam_text"])
+                if target_text is not None:
+                    with open(self.save_path / part / f"output_target_{output_id}.txt", 'w') as f:
+                        f.write(output_text["target_text"])
         return batch
-
-    def save_texts(self, logits, pred_label, length, part, output_id):
-        inds = pred_label[: int(length)]
-        argmax_text_raw = self.text_encoder.decode(inds)
-        argmax_text = self.text_encoder.ctc_decode(inds)
-        beam_text = self.text_encoder.ctc_beam_decode(logits[:length].exp())
-        output_text = {
-            "text_raw": argmax_text_raw,
-            "text": argmax_text,
-            "beam_text": beam_text
-        }
-        if self.save_path is not None:
-            with open(self.save_path / part / f"output_text_{output_id}.txt", 'w') as f:
-                f.write(output_text["text"])
-            with open(self.save_path / part / f"output_beam_{output_id}.txt", 'w') as f:
-                f.write(output_text["beam_text"])
 
     def _inference_part(self, part, dataloader):
         """

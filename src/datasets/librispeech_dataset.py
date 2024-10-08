@@ -27,13 +27,18 @@ class LibrispeechDataset(BaseDataset):
         self.use_bpe = kwargs.get('use_bpe', False)
         if self.use_bpe:
             self.translations_file = kwargs.get('data_file', 'translations.txt')  # file for bpe
-
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "librispeech"
             data_dir.mkdir(exist_ok=True, parents=True)
         elif isinstance(data_dir, str):
             data_dir = Path(data_dir).absolute()
         self._data_dir = data_dir
+        save_dir = kwargs.get('save_dir', None)
+        if isinstance(save_dir, str):
+            save_dir = Path(save_dir).absolute()
+        self._save_dir = save_dir
+        self._save_dir.mkdir(exist_ok=True, parents=True)
+
         if part == "train_all":
             index = sum(
                 [
@@ -59,7 +64,7 @@ class LibrispeechDataset(BaseDataset):
         shutil.rmtree(str(self._data_dir / "LibriSpeech"))
 
     def _get_or_load_index(self, part):
-        index_path = self._data_dir / f"{part}_index.json"
+        index_path = self._save_dir / f"{part}_index.json"
         if index_path.exists():
             with index_path.open() as f:
                 index = json.load(f)
@@ -101,7 +106,8 @@ class LibrispeechDataset(BaseDataset):
                         }
                     )
                     if self.use_bpe:
-                        trans_file.write(f_text.lower() + '\n')
+                        pass
+                        # trans_file.write(f_text.lower() + ' ')
         if self.use_bpe:
             trans_file.close()
         return index

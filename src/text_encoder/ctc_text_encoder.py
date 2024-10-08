@@ -94,7 +94,7 @@ class CTCTextEncoder:
             new_str = string + new_token[sim:]
         return new_str
 
-    def ctc_beam_decode(self, probs, k=3, beam_len=10):
+    def ctc_beam_decode(self, probs, k=10, beam_len=50):
         # probs (seq, classes)
         best_string = ''
         start = 0
