@@ -141,7 +141,9 @@ class CTCTextEncoder:
             )
             # load tokenizer from file
         self.sp_model = SentencePieceProcessor(model_file=sp_model_prefix + '.model')
-        self.alphabet = [self.sp_model.id_to_piece(id) for id in range(self.sp_model.get_piece_size())]
+        self.alphabet = [self.sp_model.id_to_piece(id).replace('▁', ' ') for id in range(self.sp_model.get_piece_size())]
+        for i in range(4):
+            self.alphabet[i] = ''
         self.vocab = list(self.alphabet) + [self.EMPTY_TOK]
         self.ind2char = dict(enumerate(self.vocab))
         self.char2ind = {v: k for k, v in self.ind2char.items()}
@@ -158,7 +160,7 @@ def similar(str1, str2):
     if str1 == '':
         return 0
     cnt = 0
-    for i in range(len(str2)):
+    for i in range(min(len(str2), len(str1))):
         if str2[i] == str1[-i - 1]:
             cnt += 1
     return cnt
