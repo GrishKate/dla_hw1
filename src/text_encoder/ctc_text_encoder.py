@@ -85,13 +85,12 @@ class CTCTextEncoder:
 
     def get_string(self, string, ind):
         new_token = self.ind2char[ind]
-        if len(string) == 1 and string == self.EMPTY_TOK:
-            new_str = new_token
-        elif new_token == self.EMPTY_TOK:
+        if len(string) > 0 and (string[-1] == self.ind2char[self.EMPTY_TOK] or string == self.ind2char[self.EMPTY_TOK]):
+            new_str = string[:-1] + new_token
+        elif len(string) > 0 and string[-1] == new_token:
             new_str = string
         else:
-            sim = similar(string, new_token)
-            new_str = string + new_token[sim:]
+            new_str = string + new_token
         return new_str
 
     def ctc_beam_decode(self, probs, k=10, beam_len=50):
@@ -120,6 +119,8 @@ class CTCTextEncoder:
             if decoded_strings[string] > cur_max:
                 cur_max = decoded_strings[string]
                 best_string = string
+        if best_string[-1]==self.ind2char[self.EMPTY_TOK]:
+            best_string=best_string[:-1]
         return best_string
 
     @staticmethod
@@ -141,7 +142,8 @@ class CTCTextEncoder:
             )
             # load tokenizer from file
         self.sp_model = SentencePieceProcessor(model_file=sp_model_prefix + '.model')
-        self.alphabet = [self.sp_model.id_to_piece(id).replace('▁', ' ') for id in range(self.sp_model.get_piece_size())]
+        self.alphabet = [self.sp_model.id_to_piece(id).replace('▁', ' ') for id in
+                         range(self.sp_model.get_piece_size())]
         for i in range(4):
             self.alphabet[i] = ''
         self.vocab = list(self.alphabet) + [self.EMPTY_TOK]
