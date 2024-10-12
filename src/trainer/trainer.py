@@ -118,28 +118,29 @@ class Trainer(BaseTrainer):
         ]
         argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
         argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        beam_texts = []
-        for log_prob_vec, length in zip(log_probs, log_probs_length):
-            beam_texts.append(self.text_encoder.ctc_beam_decode(log_prob_vec[:length].exp()))
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, beam_texts, audio_path))
+        #beam_texts = []
+        #for log_prob_vec, length in zip(log_probs, log_probs_length):
+        #    beam_texts.append(self.text_encoder.ctc_beam_decode(log_prob_vec[:length].exp()))
+        #tuples = list(zip(argmax_texts, text, argmax_texts_raw, beam_texts, audio_path))
+        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
 
         rows = {}
-        for pred, target, raw_pred, beam_pred, audio_path in tuples[:examples_to_log]:
+        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
             target = self.text_encoder.normalize_text(target)
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
-            beam_wer = calc_wer(target, beam_pred) * 100
-            beam_cer = calc_cer(target, beam_pred) * 100
+            #beam_wer = calc_wer(target, beam_pred) * 100
+            #beam_cer = calc_cer(target, beam_pred) * 100
 
             rows[Path(audio_path).name] = {
                 "target": target,
                 "raw prediction": raw_pred,
                 "predictions": pred,
-                "beam_predictions": beam_pred,
+                #"beam_predictions": beam_pred,
                 "wer": wer,
                 "cer": cer,
-                "beam_wer": beam_wer,
-                "beam_cer": beam_cer,
+                #"beam_wer": beam_wer,
+                #"beam_cer": beam_cer,
             }
         self.writer.add_table(
             "predictions", pd.DataFrame.from_dict(rows, orient="index")
