@@ -85,7 +85,7 @@ class CTCTextEncoder:
 
     def get_string(self, string, ind):
         new_token = self.ind2char[ind]
-        if len(string) > 0 and (string[-1] == self.ind2char[self.EMPTY_TOK] or string == self.ind2char[self.EMPTY_TOK]):
+        if len(string) > 0 and (string[-1] == self.EMPTY_TOK or string == self.EMPTY_TOK):
             new_str = string[:-1] + new_token
         elif len(string) > 0 and string[-1] == new_token:
             new_str = string
@@ -119,8 +119,8 @@ class CTCTextEncoder:
             if decoded_strings[string] > cur_max:
                 cur_max = decoded_strings[string]
                 best_string = string
-        if best_string[-1]==self.ind2char[self.EMPTY_TOK]:
-            best_string=best_string[:-1]
+        if best_string[-1] == self.EMPTY_TOK:
+            best_string = best_string[:-1]
         return best_string
 
     @staticmethod

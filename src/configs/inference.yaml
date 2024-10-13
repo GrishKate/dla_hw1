@@ -11,6 +11,7 @@ inferencer:
   save_path: "example" # any name here, can be a dataset name
   seed: 1
   from_pretrained: "../../input/conformer-1/model_best-24500.pth" # path to the pretrained model
+  save_txt: False # if need to save text on disk
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
   use_bpe: False
