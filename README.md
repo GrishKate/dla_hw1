@@ -83,7 +83,7 @@ Conformer2 test-clean:
 <img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf2_test_clean_argmax.jpg" />
 
 Conformer2 test-other:
-<img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf2_test_clean_argmax.jpg" />
+<img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf2_test_other_argmax.jpg" />
 
 ## Checkpoints
 Conformer1: https://drive.google.com/file/d/1qDydqpGOU8Ty6xMcfZR-XNrLJGWcIo-r/view?usp=sharing
