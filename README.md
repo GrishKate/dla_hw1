@@ -69,6 +69,25 @@ To run inference (evaluate the model or save predictions):
 ```bash
 python3 inference.py HYDRA_CONFIG_ARGUMENTS
 ```
+## How to check 
+To check CER and WER between two texts, provide two paths to target and predicted text files and run the following command:
+```bash
+python3 script_calc_errs.py HYDRA_CONFIG_ARGUMENTS
+```
+
+## Metrics 
+Conformer1 test-clean:
+<img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf1_test_clean.jpg" />
+
+Conformer2 test-clean:
+<img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf2_test_clean_argmax.jpg" />
+
+Conformer2 test-other:
+<img src="https://github.com/GrishKate/dla_hw1/blob/main/imgs/conf2_test_clean_argmax.jpg" />
+
+## Checkpoints
+Conformer1: https://drive.google.com/file/d/1qDydqpGOU8Ty6xMcfZR-XNrLJGWcIo-r/view?usp=sharing
+Conformer2: https://drive.google.com/file/d/1ZV9hsd9M7J6tpj1o82v1EpnS3QZddRFc/view?usp=sharing
 
 ## Credits
 
